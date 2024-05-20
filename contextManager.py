@@ -27,7 +27,7 @@ class BrakWartosciError(Exception):
 
 
 def focusIn(x, y):
-    if y.get() == x:
+    if y.get() == x and y.cget("foreground") == "gray":
         y.delete(0, END)
         y.configure(foreground="white")
 

@@ -23,12 +23,11 @@ class Mail:
         self.__haslo = ""
 
     def wyslijWiadomosc(self, mailEnter):
-        print(mailEnter)
+
         if mailEnter.cget("foreground") == "gray":
             messagebox.showerror("Error", "Nie wybrano danych.")
         else:
             self.oknoWiadomości = Toplevel()
-
             self.oknoWiadomości.title("Wysyłanie widomości")
 
             wiadomoscRamka = Frame(self.oknoWiadomości)
