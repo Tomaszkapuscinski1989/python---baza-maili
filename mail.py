@@ -21,13 +21,15 @@ class Mail:
         self.__serwer = ""
         self.__login = ""
         self.__haslo = ""
+        self.nazwaBazy = ""
 
     def wyslijWiadomosc(self, mailEnter):
-
+        print(mailEnter)
         if mailEnter.cget("foreground") == "gray":
             messagebox.showerror("Error", "Nie wybrano danych.")
         else:
             self.oknoWiadomości = Toplevel()
+
             self.oknoWiadomości.title("Wysyłanie widomości")
 
             wiadomoscRamka = Frame(self.oknoWiadomości)
@@ -204,10 +206,47 @@ class Mail:
         hasłoLabel.grid(row=4, column=0)
         self.hasloEnter.grid(row=4, column=1)
 
-        kontaktAutor = ttk.Button(logowanieRamka, text="Przedż do strony")
+        kontaktAutor = ttk.Button(logowanieRamka, text="usun z bazy")
+        kontaktAutor.grid(row=5, column=0)
+        kontaktAutor.bind("<Button-1>", self.usunZBazy)
+        kontaktAutor.bind("<Return>", self.usunZBazy)
+
+        kontaktAutor = ttk.Button(logowanieRamka, text="Dodaj do bazy")
         kontaktAutor.grid(row=5, column=1)
+        kontaktAutor.bind("<Button-1>", self.dodajDobazy)
+        kontaktAutor.bind("<Return>", self.dodajDobazy)
+
+        kontaktAutor = ttk.Button(logowanieRamka, text="Zatwierdź i zamknij")
+        kontaktAutor.grid(row=6, column=0, columnspan=2)
         kontaktAutor.bind("<Button-1>", self.weryfikacjaDanychLogowania)
         kontaktAutor.bind("<Return>", self.weryfikacjaDanychLogowania)
+
+        with contextManager.open_base(self.nazwaBazy) as c:
+            c.execute("select * FROM DaneLogowania")
+            r = c.fetchall()
+        print(r)
+
+        if r:
+            self.portEnter.delete(0, END)
+            self.portEnter.configure(foreground="white")
+            self.portEnter.insert(0, r[0][0])
+
+            self.serwerEnter.delete(0, END)
+            self.serwerEnter.configure(foreground="white")
+            self.serwerEnter.insert(0, r[0][1])
+
+            self.loginEnter.delete(0, END)
+            self.loginEnter.configure(foreground="white")
+            self.loginEnter.insert(0, r[0][2])
+
+            self.hasloEnter.delete(0, END)
+            self.hasloEnter.configure(foreground="white")
+            self.hasloEnter.insert(0, r[0][3])
+
+            self.__port = int(self.portEnter.get())
+            self.__serwer = self.serwerEnter.get()
+            self.__login = self.loginEnter.get()
+            self.__haslo = self.hasloEnter.get()
 
     def weryfikacjaDanychLogowania(self, e):
         try:
@@ -244,3 +283,57 @@ class Mail:
             messagebox.showerror("Error", "Wystąpił błąd.")
         else:
             self.oknoLogowania.destroy()
+
+    def dodajDobazy(self, e):
+        try:
+            if (
+                self.portEnter.cget("foreground") == "gray"
+                or self.portEnter.get() == ""
+            ):
+                raise contextManager.BrakWartosciError
+            if (
+                self.serwerEnter.cget("foreground") == "gray"
+                or self.serwerEnter.get() == ""
+            ):
+                raise contextManager.BrakWartosciError
+            if (
+                self.loginEnter.cget("foreground") == "gray"
+                or self.loginEnter.get() == ""
+            ):
+                raise contextManager.BrakWartosciError
+            if (
+                self.hasloEnter.cget("foreground") == "gray"
+                or self.hasloEnter.get() == ""
+            ):
+                raise contextManager.BrakWartosciError
+
+            with contextManager.open_base(self.nazwaBazy) as c:
+                c.execute(
+                    " INSERT INTO DaneLogowania VALUES (:port, :serwer, :login, :haslo)",
+                    {
+                        "port": int(self.portEnter.get()),
+                        "serwer": self.serwerEnter.get(),
+                        "login": self.loginEnter.get(),
+                        "haslo": self.hasloEnter.get(),
+                    },
+                )
+        except ValueError:
+            messagebox.showerror("Error", "Numer portu musi być liczbą.")
+        except contextManager.BrakWartosciError:
+            messagebox.showerror("Error", "Poprawnie uzupełnij wszystkie dane.")
+        except Exception:
+            messagebox.showerror("Error", "Wystąpił błąd.")
+        else:
+            self.oknoLogowania.destroy()
+
+    def usunZBazy(self, e):
+        try:
+            with contextManager.open_base(self.nazwaBazy) as c:
+                c.execute(
+                    """DELETE FROM DaneLogowania  where oid=:oid""",
+                    {"oid": 1},
+                )
+        except Exception:
+            messagebox.showerror("Error", "Wystąpił błąd podczas usuwania wpisu.")
+        else:
+            messagebox.showinfo("Info", "Usunięto wpis.")

@@ -31,14 +31,6 @@ class Main(Tk):
         self.geometry("800x400")
         self.nazwaBazy = ""
 
-        # self.idEnter = ""
-        # self.imieEnter = ""
-        # self.nazwiskoEnter = ""
-        # self.telefonEnter = ""
-        # self.nazwaEnter = ""
-        # self.stronaEnter = ""
-        # self.mailEnter = ""
-
         self.protocol("WM_DELETE_WINDOW", lambda x=self: contextManager.zamykanie(x))
 
         self.info = informacjeOprogramie.Info()
@@ -50,11 +42,11 @@ class Main(Tk):
         bazaDanych = Menu(
             menu, activebackground="black", activeforeground="white", tearoff=0
         )
-        poczta = Menu(
+        self.poczta = Menu(
             menu, activebackground="black", activeforeground="white", tearoff=0
         )
 
-        informacje = Menu(
+        self.informacje = Menu(
             menu, activebackground="black", activeforeground="white", tearoff=0
         )
 
@@ -66,17 +58,20 @@ class Main(Tk):
             label="Exit", command=lambda x=self: contextManager.zamykanie(x)
         )
 
-        menu.add_cascade(label="Poczta", menu=poczta)
-        poczta.add_command(
+        menu.add_cascade(label="Poczta", menu=self.poczta)
+        self.poczta.add_command(
             label="Logowanie do poczty",
             command=self.mail.daneLogowania,
+            state=DISABLED,
         )
-        poczta.add_separator()
-        poczta.add_command(label="Wyślij wiadomość")
-        poczta.add_command(label="wyślij wiadomość do wszystkich")
+        self.poczta.add_separator()
+        self.poczta.add_command(label="Wyślij wiadomość", state=DISABLED)
+        self.poczta.add_command(label="wyślij wiadomość do wszystkich", state=DISABLED)
 
-        menu.add_cascade(label="O programie", menu=informacje)
-        informacje.add_command(label="Informacje o programie", command=self.info.info)
+        menu.add_cascade(label="O programie", menu=self.informacje)
+        self.informacje.add_command(
+            label="Informacje o programie", command=self.info.info
+        )
 
         ramka1 = Frame(self)
         ramka1.pack()
@@ -200,36 +195,44 @@ class Main(Tk):
         mailLabel.grid(row=6, column=0)
         self.mailEnter.grid(row=6, column=1)
 
-        kontaktAutor = ttk.Button(ramka1, text="Przedż do strony")
-        kontaktAutor.grid(row=5, column=2)
-        kontaktAutor.bind("<Button-1>", self.stronaKlienta)
-        kontaktAutor.bind("<Return>", self.stronaKlienta)
+        self.stronaPrzycisk = ttk.Button(
+            ramka1, text="Przedż do strony", state=DISABLED
+        )
+        self.stronaPrzycisk.grid(row=5, column=2)
+        self.stronaPrzycisk.bind("<Button-1>", self.stronaKlienta)
+        self.stronaPrzycisk.bind("<Return>", self.stronaKlienta)
 
-        kontaktAutor = ttk.Button(ramka1, text="Wyślij wiadomość")
-        kontaktAutor.grid(row=6, column=2)
+        self.mailPrzycisk = ttk.Button(ramka1, text="Wyślij wiadomość", state=DISABLED)
+        self.mailPrzycisk.grid(row=6, column=2)
 
-        kontaktAutor.bind(
+        self.mailPrzycisk.bind(
             "<Button-1>",
             lambda event, y=self.mailEnter: self.mail.wyslijWiadomosc(y),
         )
-        kontaktAutor.bind(
+        self.mailPrzycisk.bind(
             "<Return>", lambda event, y=self.mailEnter: self.mail.wyslijWiadomosc(y)
         )
 
-        kontaktAutor = ttk.Button(ramka1, text="Dodaj klienta")
-        kontaktAutor.grid(row=0, column=3)
-        kontaktAutor.bind("<Button-1>", self.dodajKlienta)
-        kontaktAutor.bind("<Return>", self.dodajKlienta)
+        self.dodajKlientaPrzycisk = ttk.Button(
+            ramka1, text="Dodaj klienta", state=DISABLED
+        )
+        self.dodajKlientaPrzycisk.grid(row=0, column=3)
+        self.dodajKlientaPrzycisk.bind("<Button-1>", self.dodajKlienta)
+        self.dodajKlientaPrzycisk.bind("<Return>", self.dodajKlienta)
 
-        kontaktAutor = ttk.Button(ramka1, text="Edytuj klienta")
-        kontaktAutor.grid(row=1, column=3)
-        kontaktAutor.bind("<Button-1>", self.edytujKlienta)
-        kontaktAutor.bind("<Return>", self.edytujKlienta)
+        self.edytujKlientaPrzycisk = ttk.Button(
+            ramka1, text="Edytuj klienta", state=DISABLED
+        )
+        self.edytujKlientaPrzycisk.grid(row=1, column=3)
+        self.edytujKlientaPrzycisk.bind("<Button-1>", self.edytujKlienta)
+        self.edytujKlientaPrzycisk.bind("<Return>", self.edytujKlienta)
 
-        kontaktAutor = ttk.Button(ramka1, text="Usuń klienta")
-        kontaktAutor.grid(row=2, column=3)
-        kontaktAutor.bind("<Button-1>", self.usunKlienta)
-        kontaktAutor.bind("<Return>", self.usunKlienta)
+        self.usunKlientaPrzycisk = ttk.Button(
+            ramka1, text="Usuń klienta", state=DISABLED
+        )
+        self.usunKlientaPrzycisk.grid(row=2, column=3)
+        self.usunKlientaPrzycisk.bind("<Button-1>", self.usunKlienta)
+        self.usunKlientaPrzycisk.bind("<Return>", self.usunKlienta)
 
         self.tree_frame = Frame(self)
         self.tree_frame.pack(side=LEFT, fill=X, expand=True)
@@ -354,10 +357,35 @@ class Main(Tk):
                             adresMail TEXT
                             ) """
                     )
+
+                    c.execute(
+                        """CREATE TABLE IF NOT EXISTS DaneLogowania (
+                            port INTIGER DEFAULT 0,
+                            serwer TEXT,
+                            login TEXT,
+                            haslo TEXT
+                            ) """
+                    )
+
+                    c.execute(
+                        """CREATE TABLE IF NOT EXISTS stopkaMaila(
+                            zawartosc TEXT
+                            ) """
+                    )
             except:
                 messagebox.showerror("Error", "Wystąpił błąd.")
             else:
                 messagebox.showinfo("info", "Baza utworzona pomyślnie")
+                self.wyświetlWszystkichKlientow()
+                self.poczta.entryconfigure(0, state="normal")
+                self.stronaPrzycisk.config(state="normal")
+                self.mailPrzycisk.config(state="normal")
+
+                self.dodajKlientaPrzycisk.config(state="normal")
+                self.edytujKlientaPrzycisk.config(state="normal")
+                self.usunKlientaPrzycisk.config(state="normal")
+
+                self.mail.nazwaBazy = self.nazwaBazy
 
     def otworzBaze(self):
 
@@ -370,8 +398,18 @@ class Main(Tk):
 
             messagebox.showinfo("info", "Otwarcie bazy powiodło się.")
             self.wyświetlWszystkichKlientow()
+            self.poczta.entryconfigure(0, state="normal")
+            self.stronaPrzycisk.config(state="normal")
+            self.mailPrzycisk.config(state="normal")
+
+            self.dodajKlientaPrzycisk.config(state="normal")
+            self.edytujKlientaPrzycisk.config(state="normal")
+            self.usunKlientaPrzycisk.config(state="normal")
+
+            self.mail.nazwaBazy = self.nazwaBazy
 
     def dodajKlienta(self, e):
+
         if self.nazwaBazy:
 
             if self.imieEnter.cget("foreground") == "gray":
@@ -400,6 +438,7 @@ class Main(Tk):
                                 "adresMail": self.mailEnter.get(),
                             },
                         )
+
                 except Exception:
                     messagebox.showerror("Error", "Wystąpił błąd.")
 
@@ -453,7 +492,7 @@ class Main(Tk):
                 self.zamknij = messagebox.askquestion("askquestion", "Usunąć wpis?")
                 if self.zamknij == "yes":
                     try:
-                        with self.open_base(self.nazwaBazy) as c:
+                        with contextManager.open_base(self.nazwaBazy) as c:
                             c.execute(
                                 """DELETE FROM klienci where oid=:oid""",
                                 {"oid": self.idEnter.get()},
