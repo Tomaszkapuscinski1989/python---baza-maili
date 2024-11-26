@@ -13,6 +13,7 @@ from email.utils import formataddr
 import informacjeOprogramie
 import mail
 import contextManager
+import exel
 
 fontDuzy = ("Times", 18)
 fontMaly = ("Times", 14)
@@ -35,6 +36,7 @@ class Main(Tk):
 
         self.info = informacjeOprogramie.Info()
         self.mail = mail.Mail()
+        self.exel = exel.Exel()
 
         menu = Menu(self)
 
@@ -43,6 +45,14 @@ class Main(Tk):
             menu, activebackground="black", activeforeground="white", tearoff=0
         )
         self.poczta = Menu(
+            menu, activebackground="black", activeforeground="white", tearoff=0
+        )
+
+        self.dane = Menu(
+            menu, activebackground="black", activeforeground="white", tearoff=0
+        )
+
+        self.wyszukaj = Menu(
             menu, activebackground="black", activeforeground="white", tearoff=0
         )
 
@@ -65,8 +75,41 @@ class Main(Tk):
             state=DISABLED,
         )
         self.poczta.add_separator()
-        self.poczta.add_command(label="Wyślij wiadomość", state=DISABLED)
-        self.poczta.add_command(label="wyślij wiadomość do wszystkich", state=DISABLED)
+
+        self.poczta.add_command(
+            label="wyślij wiadomość do wszystkich",
+            command=self.mail.wyslijWiadomoscDoWszystkich,
+            state=DISABLED,
+        )
+
+        menu.add_cascade(label="Dane", menu=self.dane)
+        self.dane.add_command(
+            label="Eksportuj do pliku exel",
+            command=self.exel.export_do_exela,
+            state=DISABLED,
+        )
+        self.dane.add_command(
+            label="Importuj z pliku exel",
+            command=self.exel.import_z_exela,
+            state=DISABLED,
+        )
+
+        menu.add_cascade(label="Szukaj...", menu=self.wyszukaj)
+        self.wyszukaj.add_command(
+            label="według pola imię",
+            command=lambda: self.szukaj("imie"),
+            state=DISABLED,
+        )
+        self.wyszukaj.add_command(
+            label="według pola nazwisko",
+            command=lambda: self.szukaj("nazwisko"),
+            state=DISABLED,
+        )
+        self.wyszukaj.add_command(
+            label="według pola nazwa firmy",
+            command=lambda: self.szukaj("nazaFirmy"),
+            state=DISABLED,
+        )
 
         menu.add_cascade(label="O programie", menu=self.informacje)
         self.informacje.add_command(
@@ -76,161 +119,84 @@ class Main(Tk):
         ramka1 = Frame(self)
         ramka1.pack()
 
-        idLabel = Label(ramka1, text="Id:")
+        self.listLabel = [
+            ["Id:", 0, 0],
+            ["Imię:", 1, 0],
+            ["Nazwisko:", 2, 0],
+            ["Telefon:", 3, 0],
+            ["Nazwa Firmy:", 4, 0],
+            ["Strona Internetowa:", 5, 0],
+            ["Adres e-mail:", 6, 0],
+        ]
+        for item in self.listLabel:
+            Label(ramka1, text=item[0]).grid(row=item[1], column=item[2])
+
         self.idEnter = Entry(ramka1)
-        idLabel.grid(row=0, column=0)
-        self.idEnter.grid(row=0, column=1)
+        self.idEnter.grid(row=0, column=1, columnspan=3, sticky="WE")
 
-        imieLabel = Label(ramka1, text="Imię:")
-        self.imieEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "Imię"
-        self.imieEnter.insert(0, teksPrzykład)
-        self.imieEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.imieEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.imieEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.imieEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        imieLabel.grid(row=1, column=0)
-        self.imieEnter.grid(row=1, column=1)
+        self.entryList = []
 
-        nazwiskoLabel = Label(ramka1, text="Nazwisko:")
-        self.nazwiskoEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "Nazwisko"
-        self.nazwiskoEnter.insert(0, teksPrzykład)
-        self.nazwiskoEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.nazwiskoEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.nazwiskoEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.nazwiskoEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        nazwiskoLabel.grid(row=2, column=0)
-        self.nazwiskoEnter.grid(row=2, column=1)
+        entrys = [
+            ["Imię", 1, 1, 3],
+            ["Nazwisko", 2, 1, 3],
+            ["111222333", 3, 1, 3],
+            ["Nazwa firmy", 4, 1, 3],
+            ["www.przykład.pl", 5, 1, 3],
+            ["przykład@przykład.pl", 6, 1, 3],
+        ]
 
-        telefonLabel = Label(ramka1, text="Telefon:")
-        self.telefonEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "111222333"
-        self.telefonEnter.insert(0, teksPrzykład)
-        self.telefonEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.telefonEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.telefonEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.telefonEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        telefonLabel.grid(row=3, column=0)
-        self.telefonEnter.grid(row=3, column=1)
+        for item in entrys:
+            teksPrzykład = item[0]
+            t = Entry(ramka1, foreground="gray")
+            t.grid(row=item[1], column=item[2], columnspan=item[3], sticky="WE")
+            t.bind(
+                "<FocusIn>",
+                lambda event, x=teksPrzykład, y=t: contextManager.focusIn(x, y),
+            )
+            t.bind(
+                "<FocusOut>",
+                lambda event, x=teksPrzykład, y=t: contextManager.focusOut(x, y),
+            )
 
-        nazwaLabel = Label(ramka1, text="Nazwa firmy:")
-        self.nazwaEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "Nazwa firmy"
-        self.nazwaEnter.insert(0, teksPrzykład)
-        self.nazwaEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.nazwaEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.nazwaEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.nazwaEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        nazwaLabel.grid(row=4, column=0)
-        self.nazwaEnter.grid(row=4, column=1)
-
-        stronaLabel = Label(ramka1, text="Strona internetowa:")
-        self.stronaEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "www.przykład.pl"
-        self.stronaEnter.insert(0, teksPrzykład)
-        self.stronaEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.stronaEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.stronaEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.stronaEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        stronaLabel.grid(row=5, column=0)
-        self.stronaEnter.grid(row=5, column=1)
-
-        mailLabel = Label(ramka1, text="Adres e-mail:")
-        self.mailEnter = Entry(ramka1, foreground="gray")
-        teksPrzykład = "przykład@przykład.pl"
-        self.mailEnter.insert(0, teksPrzykład)
-        self.mailEnter.bind(
-            "<FocusIn>",
-            lambda event, x=teksPrzykład, y=self.mailEnter: contextManager.focusIn(
-                x, y
-            ),
-        )
-        self.mailEnter.bind(
-            "<FocusOut>",
-            lambda event, x=teksPrzykład, y=self.mailEnter: contextManager.focusOut(
-                x, y
-            ),
-        )
-        mailLabel.grid(row=6, column=0)
-        self.mailEnter.grid(row=6, column=1)
+            t.insert(0, teksPrzykład)
+            self.entryList.append(t)
 
         self.stronaPrzycisk = ttk.Button(
             ramka1, text="Przedż do strony", state=DISABLED
         )
-        self.stronaPrzycisk.grid(row=5, column=2)
+        self.stronaPrzycisk.grid(row=5, column=5)
         self.stronaPrzycisk.bind("<Button-1>", self.stronaKlienta)
         self.stronaPrzycisk.bind("<Return>", self.stronaKlienta)
 
         self.mailPrzycisk = ttk.Button(ramka1, text="Wyślij wiadomość", state=DISABLED)
-        self.mailPrzycisk.grid(row=6, column=2)
+        self.mailPrzycisk.grid(row=6, column=5)
 
         self.mailPrzycisk.bind(
             "<Button-1>",
-            lambda event, y=self.mailEnter: self.mail.wyslijWiadomosc(y),
+            lambda event, y=self.entryList[5]: self.mail.wyslijWiadomosc(y),
         )
         self.mailPrzycisk.bind(
-            "<Return>", lambda event, y=self.mailEnter: self.mail.wyslijWiadomosc(y)
+            "<Return>", lambda event, y=self.entryList[5]: self.mail.wyslijWiadomosc(y)
         )
 
         self.dodajKlientaPrzycisk = ttk.Button(
             ramka1, text="Dodaj klienta", state=DISABLED
         )
-        self.dodajKlientaPrzycisk.grid(row=0, column=3)
+        self.dodajKlientaPrzycisk.grid(row=0, column=6)
         self.dodajKlientaPrzycisk.bind("<Button-1>", self.dodajKlienta)
         self.dodajKlientaPrzycisk.bind("<Return>", self.dodajKlienta)
 
         self.edytujKlientaPrzycisk = ttk.Button(
             ramka1, text="Edytuj klienta", state=DISABLED
         )
-        self.edytujKlientaPrzycisk.grid(row=1, column=3)
+        self.edytujKlientaPrzycisk.grid(row=1, column=6)
         self.edytujKlientaPrzycisk.bind("<Button-1>", self.edytujKlienta)
         self.edytujKlientaPrzycisk.bind("<Return>", self.edytujKlienta)
 
         self.usunKlientaPrzycisk = ttk.Button(
             ramka1, text="Usuń klienta", state=DISABLED
         )
-        self.usunKlientaPrzycisk.grid(row=2, column=3)
+        self.usunKlientaPrzycisk.grid(row=2, column=6)
         self.usunKlientaPrzycisk.bind("<Button-1>", self.usunKlienta)
         self.usunKlientaPrzycisk.bind("<Return>", self.usunKlienta)
 
@@ -241,6 +207,13 @@ class Main(Tk):
         tree_scrolly.pack(side=RIGHT, fill=Y)
         tree_scrollx = ttk.Scrollbar(self.tree_frame, orient=HORIZONTAL)
         tree_scrollx.pack(side=BOTTOM, fill=X)
+        self.refresh_button = ttk.Button(
+            self.tree_frame,
+            command=self.wyświetlWszystkichKlientow,
+            text="Odśwież",
+            state=DISABLED,
+        )
+        self.refresh_button.pack()
 
         self.my_tree = ttk.Treeview(
             self.tree_frame,
@@ -264,29 +237,47 @@ class Main(Tk):
             "oid",
         )
 
-        self.my_tree.column("#0", width=0, stretch=NO)
-        self.my_tree.heading("#0", text="", anchor=E)
+        myTreeHeading = [
+            {"name": "#0", "width": 0, "stretch": False, "text": ""},
+            {"name": "imie", "width": 140, "text": "Imię", "stretch": True},
+            {
+                "name": "nazwisko",
+                "width": 40,
+                "text": "Nazwisko",
+                "stretch": True,
+            },
+            {
+                "name": "telefon",
+                "width": 40,
+                "text": "Telefon",
+                "stretch": True,
+            },
+            {
+                "name": "nazwaFirmy",
+                "width": 140,
+                "text": "Nazwa firmy",
+                "stretch": True,
+            },
+            {
+                "name": "strona",
+                "width": 40,
+                "text": "Strona Internetowa",
+                "stretch": True,
+            },
+            {
+                "name": "mail",
+                "width": 40,
+                "text": "Adres e-mail",
+                "stretch": True,
+            },
+            {"name": "oid", "width": 0, "stretch": False, "text": ""},
+        ]
 
-        self.my_tree.column("imie", anchor=W, width=140)
-        self.my_tree.heading("imie", text="Imię", anchor=W)
-
-        self.my_tree.column("nazwisko", anchor=W, width=40)
-        self.my_tree.heading("nazwisko", text="Nazwisko", anchor=W)
-
-        self.my_tree.column("telefon", anchor=W, width=40)
-        self.my_tree.heading("telefon", text="Telefon", anchor=W)
-
-        self.my_tree.column("nazwaFirmy", anchor=W, width=140)
-        self.my_tree.heading("nazwaFirmy", text="Nazwa firmy", anchor=W)
-
-        self.my_tree.column("strona", anchor=W, width=40)
-        self.my_tree.heading("strona", text="Strona Internetowa", anchor=W)
-
-        self.my_tree.column("mail", anchor=W, width=40)
-        self.my_tree.heading("mail", text="Adres e-mail", anchor=W)
-
-        self.my_tree.column("oid", width=0, stretch=NO)
-        self.my_tree.heading("oid", text="", anchor=E)
+        for item in myTreeHeading:
+            self.my_tree.column(
+                item["name"], width=item["width"], stretch=item["stretch"], anchor=W
+            )
+            self.my_tree.heading(item["name"], text=item["text"], anchor=W)
 
         self.my_tree.tag_configure("odd", background=bg2, foreground="white")
         self.my_tree.tag_configure("even", background=bg3, foreground="white")
@@ -295,20 +286,17 @@ class Main(Tk):
 
         self.listaPol = [
             [self.idEnter, "Id:", "Id"],
-            [self.imieEnter, "Imię:", "Imię"],
-            [self.nazwiskoEnter, "Nazwisko", "Nazwisko"],
-            [self.telefonEnter, "Telefon", "111222333"],
-            [self.nazwaEnter, "Nazwa firmy", "Nazwa firmy"],
-            [self.stronaEnter, "Strona internetoes", "www.przykład.pl"],
-            [self.mailEnter, "Adres e-mail", "przykład@przykład.pl"],
+            [self.entryList[0], "Imię:", "Imię"],
+            [self.entryList[1], "Nazwisko", "Nazwisko"],
+            [self.entryList[2], "Telefon", "111222333"],
+            [self.entryList[3], "Nazwa firmy", "Nazwa firmy"],
+            [self.entryList[4], "Strona internetoes", "www.przykład.pl"],
+            [self.entryList[5], "Adres e-mail", "przykład@przykład.pl"],
         ]
-
         self.wyświetlWszystkichKlientow()
 
     def wyswietlDaneKlienta(self, e):
-
         for i in self.listaPol:
-
             i[0].delete(0, END)
 
         selected = self.my_tree.focus()
@@ -320,25 +308,20 @@ class Main(Tk):
 
     def stronaKlienta(self, e):
         if self.nazwaBazy:
-
-            if self.stronaEnter.cget("foreground") == "gray":
+            if self.entryList[4].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
             else:
-
                 messagebox.showinfo("info", "Strona zostanie otwarta")
-                webbrowser.open(self.stronaEnter.get())
-
+                webbrowser.open(self.entryList[4].get())
         else:
             messagebox.showerror("Error", "Nie uruchomiono żadnej bazy")
 
     def nowaBaza(self):
-
         self.nazwaBazy = filedialog.asksaveasfilename(
             defaultextension="*.db", filetypes=(("db", "*.db"),)
         )
 
         if self.nazwaBazy:
-
             try:
                 nazwa = self.nazwaBazy.split("/")
                 if os.path.exists(f"{nazwa[-1]}"):
@@ -377,52 +360,53 @@ class Main(Tk):
             else:
                 messagebox.showinfo("info", "Baza utworzona pomyślnie")
                 self.wyświetlWszystkichKlientow()
-                self.poczta.entryconfigure(0, state="normal")
-                self.stronaPrzycisk.config(state="normal")
-                self.mailPrzycisk.config(state="normal")
-
-                self.dodajKlientaPrzycisk.config(state="normal")
-                self.edytujKlientaPrzycisk.config(state="normal")
-                self.usunKlientaPrzycisk.config(state="normal")
-
-                self.mail.nazwaBazy = self.nazwaBazy
+                self.inicjuj()
 
     def otworzBaze(self):
-
         self.nazwaBazy = filedialog.askopenfilename(filetypes=(("db", "*.db"),))
 
         if self.nazwaBazy:
-
             nazwa = self.nazwaBazy.split("/")
             self.title(f"{self.nazwaProgramu} - {nazwa[-1]}")
 
             messagebox.showinfo("info", "Otwarcie bazy powiodło się.")
             self.wyświetlWszystkichKlientow()
-            self.poczta.entryconfigure(0, state="normal")
-            self.stronaPrzycisk.config(state="normal")
-            self.mailPrzycisk.config(state="normal")
+            self.inicjuj()
 
-            self.dodajKlientaPrzycisk.config(state="normal")
-            self.edytujKlientaPrzycisk.config(state="normal")
-            self.usunKlientaPrzycisk.config(state="normal")
+    def inicjuj(self):
+        self.poczta.entryconfigure(0, state="normal")
+        self.poczta.entryconfigure(2, state="normal")
+        self.dane.entryconfigure(0, state="normal")
+        self.dane.entryconfigure(1, state="normal")
+        self.wyszukaj.entryconfigure(0, state="normal")
+        self.wyszukaj.entryconfigure(1, state="normal")
+        self.wyszukaj.entryconfigure(2, state="normal")
+        self.stronaPrzycisk.config(state="normal")
+        self.mailPrzycisk.config(state="normal")
 
-            self.mail.nazwaBazy = self.nazwaBazy
+        self.dodajKlientaPrzycisk.config(state="normal")
+        self.edytujKlientaPrzycisk.config(state="normal")
+        self.usunKlientaPrzycisk.config(state="normal")
+        self.refresh_button.config(state="normal")
+
+        self.mail.nazwaBazy = self.nazwaBazy
+        self.exel.nazwaBazy = self.nazwaBazy
 
     def dodajKlienta(self, e):
 
         if self.nazwaBazy:
 
-            if self.imieEnter.cget("foreground") == "gray":
+            if self.entryList[0].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.nazwiskoEnter.cget("foreground") == "gray":
+            elif self.entryList[1].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.telefonEnter.cget("foreground") == "gray":
+            elif self.entryList[2].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.nazwaEnter.cget("foreground") == "gray":
+            elif self.entryList[3].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.stronaEnter.cget("foreground") == "gray":
+            elif self.entryList[4].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.mailEnter.cget("foreground") == "gray":
+            elif self.entryList[5].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
             else:
                 try:
@@ -430,12 +414,12 @@ class Main(Tk):
                         c.execute(
                             " INSERT INTO klienci VALUES (:imie, :nazwisko, :telefon, :nazaFirmy, :stronaInternetowa, :adresMail)",
                             {
-                                "imie": self.imieEnter.get(),
-                                "nazwisko": self.nazwiskoEnter.get(),
-                                "telefon": int(self.telefonEnter.get()),
-                                "nazaFirmy": self.nazwaEnter.get(),
-                                "stronaInternetowa": self.stronaEnter.get(),
-                                "adresMail": self.mailEnter.get(),
+                                "imie": self.entryList[0].get(),
+                                "nazwisko": self.entryList[1].get(),
+                                "telefon": int(self.entryList[2].get()),
+                                "nazaFirmy": self.entryList[3].get(),
+                                "stronaInternetowa": self.entryList[4].get(),
+                                "adresMail": self.entryList[5].get(),
                             },
                         )
 
@@ -451,17 +435,17 @@ class Main(Tk):
 
     def edytujKlienta(self, e):
         if self.nazwaBazy:
-            if self.imieEnter.cget("foreground") == "gray":
+            if self.entryList[0].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.nazwiskoEnter.cget("foreground") == "gray":
+            elif self.entryList[1].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.telefonEnter.cget("foreground") == "gray":
+            elif self.entryList[2].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.nazwaEnter.cget("foreground") == "gray":
+            elif self.entryList[3].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.stronaEnter.cget("foreground") == "gray":
+            elif self.entryList[4].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
-            elif self.mailEnter.cget("foreground") == "gray":
+            elif self.entryList[5].cget("foreground") == "gray":
                 messagebox.showerror("Error", "Nie wybrano danych.")
             else:
                 try:
@@ -469,12 +453,12 @@ class Main(Tk):
                         c.execute(
                             " UPDATE klienci SET imie=:imie, nazwisko=:nazwisko, telefon=:telefon, nazaFirmy=:nazaFirmy, stronaInternetowa=:stronaInternetowa, adresMail=:adresMail WHERE oid = :k4",
                             {
-                                "imie": self.imieEnter.get(),
-                                "nazwisko": self.nazwiskoEnter.get(),
-                                "telefon": int(self.telefonEnter.get()),
-                                "nazaFirmy": self.nazwaEnter.get(),
-                                "stronaInternetowa": self.stronaEnter.get(),
-                                "adresMail": self.mailEnter.get(),
+                                "imie": self.entryList[0].get(),
+                                "nazwisko": self.entryList[1].get(),
+                                "telefon": int(self.entryList[2].get()),
+                                "nazaFirmy": self.entryList[3].get(),
+                                "stronaInternetowa": self.entryList[4].get(),
+                                "adresMail": self.entryList[5].get(),
                                 "k4": self.idEnter.get(),
                             },
                         )
@@ -519,49 +503,97 @@ class Main(Tk):
                 c.execute("select *, oid FROM klienci")
                 r = c.fetchall()
 
-            self.counter = 1
-            for value in r:
-
-                if self.counter % 2 == 0:
-
-                    self.my_tree.insert(
-                        parent="",
-                        index="end",
-                        iid=self.counter,
-                        text="",
-                        values=(
-                            value[0],
-                            value[1],
-                            value[2],
-                            value[3],
-                            value[4],
-                            value[5],
-                            value[-1],
-                        ),
-                        tags=("odd",),
-                    )
+            for counter, value in enumerate(r, start=1):
+                if counter % 2 == 0:
+                    mode = "odd"
                 else:
-                    self.my_tree.insert(
-                        parent="",
-                        index="end",
-                        iid=self.counter,
-                        text="",
-                        values=(
-                            value[0],
-                            value[1],
-                            value[2],
-                            value[3],
-                            value[4],
-                            value[5],
-                            value[-1],
-                        ),
-                        tags=("even",),
-                    )
-                self.counter += 1
+                    mode = "even"
+
+                self.my_tree.insert(
+                    parent="",
+                    index="end",
+                    iid=counter,
+                    text="",
+                    values=(
+                        value[0],
+                        value[1],
+                        value[2],
+                        value[3],
+                        value[4],
+                        value[5],
+                        value[-1],
+                    ),
+                    tags=(mode,),
+                )
+
+    def szukaj(self, pole):
+        self.oknoWyszukiwania = Toplevel()
+        self.oknoWyszukiwania.title("Szukaj")
+
+        with contextManager.open_base(self.nazwaBazy) as c:
+            c.execute(f"SELECT {pole} FROM klienci")
+            lista = c.fetchall()
+
+        lista = list(set(lista))
+        lista.insert(0, "Wybierz")
+
+        header = (
+            "Imię"
+            if pole == "imie"
+            else ("Nazwisko" if pole == "nazwisko" else "Nazwa firmy")
+        )
+        szukajLabel = Label(self.oknoWyszukiwania, text=f"Szukaj według pola {header}:")
+        szukajLabel.pack()
+        self.wybor_id = ttk.Combobox(self.oknoWyszukiwania, value=lista)
+        self.wybor_id.current(0)
+        self.wybor_id.pack()
+
+        self.refresh_button = ttk.Button(
+            self.oknoWyszukiwania,
+            command=lambda: self.szukaj_2(pole),
+            text="Wyszukaj",
+        )
+        self.refresh_button.pack()
+
+    def szukaj_2(self, pole):
+        with contextManager.open_base(self.nazwaBazy) as c:
+            c.execute(
+                f"SELECT *, oid FROM klienci WHERE {pole} = :oid",
+                {"oid": self.wybor_id.get()},
+            )
+            r = c.fetchall()
+
+        if r:
+            self.my_tree.delete(*self.my_tree.get_children())
+            self.oknoWyszukiwania.destroy()
+
+            for counter, value in enumerate(r, start=1):
+                if counter % 2 == 0:
+                    mode = "odd"
+                else:
+                    mode = "even"
+
+                self.my_tree.insert(
+                    parent="",
+                    index="end",
+                    iid=counter,
+                    text="",
+                    values=(
+                        value[0],
+                        value[1],
+                        value[2],
+                        value[3],
+                        value[4],
+                        value[5],
+                        value[-1],
+                    ),
+                    tags=(mode,),
+                )
+        else:
+            self.oknoWyszukiwania.destroy()
+            messagebox.showinfo("info", "")
 
 
 if __name__ == "__main__":
-
     main = Main()
-
     main.mainloop()

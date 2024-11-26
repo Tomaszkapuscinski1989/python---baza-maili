@@ -11,7 +11,6 @@ from email.message import EmailMessage
 from email.utils import formataddr
 
 import contextManager
-import main
 
 
 class Mail:
@@ -23,9 +22,9 @@ class Mail:
         self.__haslo = ""
         self.nazwaBazy = ""
 
-    def wyslijWiadomosc(self, mailEnter):
-        print(mailEnter)
-        if mailEnter.cget("foreground") == "gray":
+    def wyslijWiadomosc(self, mail):
+        self.mailEnter = mail
+        if self.mailEnter.cget("foreground") == "gray":
             messagebox.showerror("Error", "Nie wybrano danych.")
         else:
             self.oknoWiadomości = Toplevel()
@@ -48,7 +47,7 @@ class Mail:
             doLabel = Label(wiadomoscRamka, text="Odbiorca:")
             doLabel.grid(row=2, column=0)
             self.doEnter = Entry(wiadomoscRamka)
-            self.doEnter.insert(0, mailEnter.get())
+            self.doEnter.insert(0, self.mailEnter.get())
             self.doEnter.grid(row=2, column=1)
 
             jakoLabel = Label(wiadomoscRamka, text="Wyświetl jako:")
@@ -96,28 +95,142 @@ class Mail:
             self.trescEnter = Text(wiadomoscRamka)
             self.trescEnter.grid(row=6, column=0, columnspan=2)
 
-            kontaktAutor = ttk.Button(wiadomoscRamka, text="Przedż do strony")
-            kontaktAutor.grid(row=7, column=0, columnspan=2)
+            trescLabel2 = Label(wiadomoscRamka, text="Wpisz treść wiadomości[html5]")
+            trescLabel2.grid(row=5, column=2, columnspan=2)
+
+            self.trescEnter2 = Text(wiadomoscRamka)
+            self.trescEnter2.grid(row=6, column=2, columnspan=2)
+
+            kontaktAutor = ttk.Button(wiadomoscRamka, text="Wyślij")
+            kontaktAutor.grid(row=7, column=1, columnspan=2)
             kontaktAutor.bind("<Button-1>", self.wysylanie)
             kontaktAutor.bind("<Return>", self.wysylanie)
 
     def wysylanie(self, e):
+        try:
+            msg = EmailMessage()
+            msg["Subject"] = self.tematEnter.get()
+            msg["From"] = formataddr((self.jakoEnter.get(), f"{self.__login}"))
+            msg["To"] = self.mailEnter.get()
+            msg["BCC"] = self.__login
 
-        msg = EmailMessage()
-        msg["Subject"] = self.tematEnter.get()
-        msg["From"] = formataddr((self.jakoEnter.get(), f"{self.__login}"))
-        msg["To"] = self.mailEnter.get()
-        msg["BCC"] = self.__login
+            msg.set_content(self.trescEnter.get(1.0, END))
+            msg.add_alternative(self.trescEnter2.get(1.0, END), subtype="html")
 
-        msg.set_content(self.trescEnter.get(1.0, END))
+            with smtplib.SMTP(self.__serwer, self.__port) as server:
+                server.starttls()
+                server.login(self.__login, self.__haslo)
+                server.sendmail(self.__login, self.mailEnter.get(), msg.as_string())
 
-        with smtplib.SMTP(self.__serwer, self.__port) as server:
-            server.starttls()
-            server.login(self.__login, self.__haslo)
-            server.sendmail(self.__login, self.mailEnter.get(), msg.as_string())
+        except:
+            messagebox.showerror("Błąd", "Wystąpił błąd podczas wysyłania")
+        else:
+            self.oknoWiadomości.destroy()
+            messagebox.showinfo("info", "Wysłano wiadomość")
 
-        messagebox.showinfo("info", "Wysłano wiadomość")
-        self.oknoWiadomości.destroy()
+    def wyslijWiadomoscDoWszystkich(self):
+        self.oknoWiadomości1 = Toplevel()
+
+        self.oknoWiadomości1.title("Wysyłanie widomości do Wszystkich z bazy")
+
+        wiadomoscRamka = Frame(self.oknoWiadomości1)
+        wiadomoscRamka.pack()
+
+        wiadomoscLabel = Label(wiadomoscRamka, text="Wysyłanie wiaadomości")
+        wiadomoscLabel.grid(row=0, column=0, columnspan=2)
+
+        odLabel = Label(wiadomoscRamka, text="Nadawca:")
+        odLabel.grid(row=1, column=0)
+        self.odEnter = Entry(wiadomoscRamka)
+        teksPrzykład = self.__login
+        self.odEnter.insert(0, teksPrzykład)
+        self.odEnter.grid(row=1, column=1)
+
+        jakoLabel = Label(wiadomoscRamka, text="Wyświetl jako:")
+        jakoLabel.grid(row=3, column=0)
+        self.jakoEnter = Entry(wiadomoscRamka, foreground="gray")
+        teksPrzykład = self.__login
+        self.jakoEnter.insert(0, teksPrzykład)
+        self.jakoEnter.bind(
+            "<FocusIn>",
+            lambda event, x=teksPrzykład, y=self.jakoEnter: contextManager.focusIn(
+                x, y
+            ),
+        )
+        self.jakoEnter.bind(
+            "<FocusOut>",
+            lambda event, x=teksPrzykład, y=self.jakoEnter: contextManager.focusOut(
+                x, y
+            ),
+        )
+
+        self.jakoEnter.grid(row=3, column=1)
+
+        tematLabel = Label(wiadomoscRamka, text="Temat:")
+        tematLabel.grid(row=4, column=0)
+        self.tematEnter = Entry(wiadomoscRamka, foreground="gray")
+        teksPrzykład = "Brak tematu"
+        self.tematEnter.insert(0, teksPrzykład)
+        self.tematEnter.bind(
+            "<FocusIn>",
+            lambda event, x=teksPrzykład, y=self.tematEnter: contextManager.focusIn(
+                x, y
+            ),
+        )
+        self.tematEnter.bind(
+            "<FocusOut>",
+            lambda event, x=teksPrzykład, y=self.tematEnter: contextManager.focusOut(
+                x, y
+            ),
+        )
+        self.tematEnter.grid(row=4, column=1)
+
+        trescLabel = Label(wiadomoscRamka, text="Wpisz treść wiadomości")
+        trescLabel.grid(row=5, column=0, columnspan=2)
+
+        self.trescEnter = Text(wiadomoscRamka)
+        self.trescEnter.grid(row=6, column=0, columnspan=2)
+
+        trescLabel2 = Label(wiadomoscRamka, text="Wpisz treść wiadomości[html5]")
+        trescLabel2.grid(row=5, column=2, columnspan=2)
+
+        self.trescEnter2 = Text(wiadomoscRamka)
+        self.trescEnter2.grid(row=6, column=2, columnspan=2)
+
+        kontaktAutor = ttk.Button(wiadomoscRamka, text="Wyślij")
+        kontaktAutor.grid(row=7, column=1, columnspan=2)
+        kontaktAutor.bind("<Button-1>", self.wysylanieDoWszystkich)
+        kontaktAutor.bind("<Return>", self.wysylanieDoWszystkich)
+
+    def wysylanieDoWszystkich(self, e):
+        with contextManager.open_base(self.nazwaBazy) as c:
+            c.execute("select adresMail FROM klienci")
+            r = c.fetchall()
+        try:
+            for adresOdbiorcy in r:
+                try:
+                    msg = EmailMessage()
+                    msg["Subject"] = self.tematEnter.get()
+                    msg["From"] = formataddr((self.jakoEnter.get(), f"{self.__login}"))
+                    msg["To"] = adresOdbiorcy[0]
+                    msg["BCC"] = self.__login
+
+                    msg.set_content(self.trescEnter.get(1.0, END))
+                    msg.add_alternative(self.trescEnter2.get(1.0, END), subtype="html")
+
+                    with smtplib.SMTP(self.__serwer, self.__port) as server:
+                        server.starttls()
+                        server.login(self.__login, self.__haslo)
+                        server.sendmail(self.__login, adresOdbiorcy[0], msg.as_string())
+                except:
+                    messagebox.showerror(
+                        "Błąd", f"Wystąpił błąd dla adresu {adresOdbiorcy[0]}"
+                    )
+        except:
+            messagebox.showerror("Błąd", "Wystąpił błąd podczas wysyłania")
+        else:
+            self.oknoWiadomości1.destroy()
+            messagebox.showinfo("info", "Wysłano wiadomości")
 
     def daneLogowania(self):
 
@@ -224,7 +337,6 @@ class Mail:
         with contextManager.open_base(self.nazwaBazy) as c:
             c.execute("select * FROM DaneLogowania")
             r = c.fetchall()
-        print(r)
 
         if r:
             self.portEnter.delete(0, END)
