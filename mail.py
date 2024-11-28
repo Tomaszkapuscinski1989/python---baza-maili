@@ -1,11 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
-from tkinter import filedialog
-import webbrowser
-from contextlib import contextmanager
-import sqlite3 as sq
-import os
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr

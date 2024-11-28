@@ -4,16 +4,10 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
-import webbrowser
-from contextlib import contextmanager
-import sqlite3 as sq
 import os
-import smtplib
-from email.message import EmailMessage
-from email.utils import formataddr
+import datetime
 
 import contextManager
-import main
 
 
 class Exel:
@@ -35,6 +29,16 @@ class Exel:
                 c.execute("select *, oid FROM klienci")
                 r = c.fetchall()
 
+            Site_header_format = workbook.add_format(
+                {
+                    "bold": True,
+                    "font_color": "black",
+                    "align": "center",
+                    "valign": "vcenter",
+                    "font_size": 30,
+                }
+            )
+
             header_format = workbook.add_format(
                 {
                     "bold": True,
@@ -49,6 +53,7 @@ class Exel:
                     "font_color": "white",
                     "bg_color": "gray",
                     "align": "center",
+                    "right": 1,
                 }
             )
             dane_foemat2 = workbook.add_format(
@@ -56,17 +61,29 @@ class Exel:
                     "font_color": "black",
                     "bg_color": "white",
                     "align": "center",
+                    "right": 1,
                 }
             )
             col = 0
-            worksheet.write(0, col, "Id:", header_format)
-            worksheet.write(0, col + 1, "Imię:", header_format)
-            worksheet.write(0, col + 2, "Nazwisko:", header_format)
-            worksheet.write(0, col + 3, "Telefon:", header_format)
-            worksheet.write(0, col + 4, "Nazwa Firmy:", header_format)
-            worksheet.write(0, col + 5, "Strona Internetowa:", header_format)
-            worksheet.write(0, col + 6, "Adres mail:", header_format)
-            for index, item in enumerate(r, start=1):
+            exelHeader = [
+                {"row": 3, "col": 0, "text": "Id", "format": header_format},
+                {"row": 3, "col": 1, "text": "Imię", "format": header_format},
+                {"row": 3, "col": 2, "text": "Nazwisko", "format": header_format},
+                {"row": 3, "col": 3, "text": "Telefon", "format": header_format},
+                {"row": 3, "col": 4, "text": "Nazwa firmy", "format": header_format},
+                {
+                    "row": 3,
+                    "col": 5,
+                    "text": "Strona internetowa",
+                    "format": header_format,
+                },
+                {"row": 3, "col": 6, "text": "Adres e-mail:", "format": header_format},
+            ]
+            for item in exelHeader:
+                worksheet.write(item["row"], item["col"], item["text"], item["format"])
+
+            col = 0
+            for index, item in enumerate(r, start=4):
                 if index % 2 == 0:
                     format = dane_foemat1
                 else:
@@ -84,17 +101,22 @@ class Exel:
             worksheet.set_column("E:F", 20)
             worksheet.set_column("G:G", 40)
 
-            worksheet.set_row(0, 30)
-
+            worksheet.set_row(0, 80)
+            worksheet.set_row(1, 40)
+            worksheet.set_row(3, 30)
+            worksheet.merge_range("A1:G1", f"Spis danych klieniów", Site_header_format)
+            worksheet.merge_range("A2:D2", "Data wykonania:", Site_header_format)
+            now = datetime.datetime.now()
+            worksheet.merge_range("E2:G2", f"{now:%d.%m.%Y %-H:%M}", Site_header_format)
             workbook.close()
         except FileNotFoundError:
             messagebox.showerror("Error", "Nie Podano nazwy pliku")
         except xlsxwriter.exceptions.FileCreateError:
             messagebox.showerror("Error", "Nie Podano nazwy pliku")
         except Exception:
-            messagebox.showerror("Error", "Ćoś poszło nie tak")
+            messagebox.showerror("Error", "Coś poszło nie tak")
         else:
-            messagebox.showinfo("info", "Dane zoatały poprawnie wyeksportowane")
+            messagebox.showinfo("info", "Dane zostały poprawnie wyeksportowane")
 
     def import_z_exela(self):
         try:
@@ -114,7 +136,7 @@ class Exel:
             with contextManager.open_base(self.nazwaBazy) as c:
                 c.execute("DELETE from klienci")
 
-            for row in range(1, dataframe1.max_row):
+            for row in range(4, dataframe1.max_row):
                 g = []
                 for col in dataframe1.iter_cols(1, dataframe1.max_column):
 
@@ -135,6 +157,6 @@ class Exel:
         except openpyxl.utils.exceptions.InvalidFileException:
             messagebox.showerror("Error", "Nie wybrano pliku")
         except Exception:
-            messagebox.showerror("Error", "Ćoś poszło nie tak")
+            messagebox.showerror("Error", "Coś poszło nie tak")
         else:
-            messagebox.showinfo("info", "Dane zoatały poprawnie wyeksportowane")
+            messagebox.showinfo("info", "Dane zostały poprawnie zainportowane")

@@ -12,7 +12,7 @@ class Info:
         oknoInformacji.geometry("200x200")
         oknoInformacji.title("O programie")
 
-        wersja = Label(oknoInformacji, text="Wersja: 0.05 Alfa")
+        wersja = Label(oknoInformacji, text="Wersja: 0.9 Beta")
         wersja.pack()
         autor = Label(oknoInformacji, text="Autor: Tomasz Kapuściński")
         autor.pack()
